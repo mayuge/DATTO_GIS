@@ -7,4 +7,5 @@ edition = "2024"
 domain = { path = "../domain" }
 engine = { path = "../engine" }
 eframe = "0.36.2"
-image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+egui_extras = { version = "0.36.2", features = ["default", "all_loaders"] }
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }

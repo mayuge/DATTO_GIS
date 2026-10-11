@@ -35,7 +35,7 @@ pub struct MapObject {
     pub tiles: Vec<TileZXY>,
 
     // 最初のタイルの画面上の配置位置 (px)
-    pub delta: [f64; 2],
+    pub offset: [f64; 2],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

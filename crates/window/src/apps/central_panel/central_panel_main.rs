@@ -6,19 +6,11 @@ use domain::Screen;
 use eframe::egui;
 use engine::create_map_obj;
 
+const TILE_SIZE: f32 = 256.0;
+
 pub struct CentralPanelMain {
     pub map_engine_store: MapEngineStore,
     pub raster_tile_layer_store: RasterTileLayerStore,
-}
-
-trait CentralPanelMainTrait {
-    fn show(
-        &mut self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        engine_store: &MapEngineStore,
-        layer_store: &RasterTileLayerStore,
-    );
 }
 
 impl Default for CentralPanelMain {
@@ -38,17 +30,19 @@ impl CentralPanelMain {
         engine_store: &mut MapEngineStore,
         raster_tile_layer_store: &RasterTileLayerStore,
     ) {
-        // 地図を描画できる領域のサイズを取得
+        // 描画領域
         let available_size = ui.available_size();
 
-        // 画面の幅と高さをストアに設定
+        if available_size.x <= 0.0 || available_size.y <= 0.0 {
+            return;
+        }
+
         engine_store.set_screen(Screen {
             width: available_size.x as f64,
             height: available_size.y as f64,
         });
 
-        //engineを呼び出す
-        // エンジンを呼び出す
+        // 地図エンジン
         let map_obj = match create_map_obj(engine_store.get_all()) {
             Ok(map_obj) => map_obj,
             Err(error) => {
@@ -57,18 +51,51 @@ impl CentralPanelMain {
             }
         };
 
-        // TileZXY を /z/x/y 形式に変換
-        let tiles: Vec<String> = map_obj
-            .tiles
-            .iter()
-            .map(|tile| format!("/{}/{}/{}", tile.z, tile.x, tile.y))
-            .collect();
+        if map_obj.tiles.is_empty() {
+            return;
+        }
 
-        println!("Tiles to fetch: {:?}", tiles);
+        // 描画領域の左上
+        let origin = ui.min_rect().min;
 
-        // レイヤーを呼び出す
-        let raster_tile_layers = raster_tile_layer_store.get_all();
+        // 表示範囲
+        let viewport = egui::Rect::from_min_size(origin, available_size);
 
-        
+        // 最初のタイルを基準に配置する
+        // engine 側で (y, x) 順にソートされていることが前提
+        let first_tile = &map_obj.tiles[0];
+
+        let offset_x = map_obj.offset[0] as f32;
+        let offset_y = map_obj.offset[1] as f32;
+
+        let layers = raster_tile_layer_store.get_all();
+
+        // 下のレイヤーから描画する
+        for layer in layers.iter().rev() {
+            for tile in &map_obj.tiles {
+                let x = origin.x + offset_x + (tile.x as f32 - first_tile.x as f32) * TILE_SIZE;
+
+                let y = origin.y + offset_y + (tile.y as f32 - first_tile.y as f32) * TILE_SIZE;
+
+                let rect =
+                    egui::Rect::from_min_size(egui::pos2(x, y), egui::vec2(TILE_SIZE, TILE_SIZE));
+
+                // 画面外のタイルは描画しない
+                if !rect.intersects(viewport) {
+                    continue;
+                }
+
+                let url = layer
+                    .url
+                    .replace("{z}", &tile.z.to_string())
+                    .replace("{x}", &tile.x.to_string())
+                    .replace("{y}", &tile.y.to_string());
+
+                ui.put(rect, egui::Image::new(url));
+            }
+        }
+
+        // 再描画が必要な場合に備えてコンテキストを受け取る
+        let _ = ctx;
     }
 }

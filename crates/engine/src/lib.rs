@@ -99,7 +99,7 @@ pub fn create_map_obj(input: &MapEngineInput) -> Result<MapObject, Box<dyn std::
     };
 
     // 表示範囲に交差するタイルを列挙
-    let tiles: Vec<TileZXY> = tms
+    let mut tiles: Vec<TileZXY> = tms
         .tiles(projected_bbox, zoom..=zoom)?
         .map(|tile| -> Result<TileZXY, std::num::TryFromIntError> {
             Ok(TileZXY {
@@ -110,12 +110,15 @@ pub fn create_map_obj(input: &MapEngineInput) -> Result<MapObject, Box<dyn std::
         })
         .collect::<Result<Vec<_>, _>>()?;
 
+    // 上から下、左から右の順番にする
+    tiles.sort_by_key(|tile| (tile.y, tile.x));
+
     // 左上の座標を含むタイル
     let first_tile = tms.xy_tile(left, top, zoom)?;
     let first_bounds = tms.xy_bounds(first_tile)?;
 
     // 最初のタイルの画面上の配置位置 (px)
-    let delta = [
+    let offset = [
         (first_bounds.left - left) / resolution,
         (top - first_bounds.top) / resolution,
     ];
@@ -130,6 +133,6 @@ pub fn create_map_obj(input: &MapEngineInput) -> Result<MapObject, Box<dyn std::
         center,
         bbox,
         tiles,
-        delta,
+        offset,
     })
 }
