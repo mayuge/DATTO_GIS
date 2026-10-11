@@ -1,8 +1,9 @@
 use domain::params::map_config::{MAP_CENTER_LATITUDE, MAP_CENTER_LONGITUDE, MAP_ZOOM_LEVEL};
-use domain::types::gis_engine_type::{MapEngineInput, MapXYZ, MoveXY, Screen};
+use domain::types::gis_engine_type::{MapEngineInput, MapObject, MapXYZ, MoveXY, Screen};
 
 pub struct MapEngineStore {
     input: MapEngineInput,
+    map_object: Option<MapObject>,
 }
 
 pub trait MapEngineStoreTrait {
@@ -15,10 +16,10 @@ pub trait MapEngineStoreTrait {
     fn set_screen(&mut self, screen: Screen);
     fn get_screen(&self) -> &Screen;
 
-    fn set_movement(&mut self, movement: MoveXY);
-    fn get_movement(&self) -> &MoveXY;
+    fn get_all(&self) -> MapEngineInput;
 
-    fn get_all(&self) -> &MapEngineInput;
+    fn set_map_object(&mut self, map_object: MapObject);
+    fn get_map_object(&self) -> Option<&MapObject>;
 }
 
 impl MapEngineStoreTrait for MapEngineStore {
@@ -46,15 +47,14 @@ impl MapEngineStoreTrait for MapEngineStore {
         &self.input.screen
     }
 
-    fn set_movement(&mut self, movement: MoveXY) {
-        self.input.movement = movement;
+    fn get_all(&self) -> MapEngineInput {
+        self.input
     }
-
-    fn get_movement(&self) -> &MoveXY {
-        &self.input.movement
+    fn set_map_object(&mut self, map_object: MapObject) {
+        self.map_object = Some(map_object);
     }
-    fn get_all(&self) -> &MapEngineInput {
-        &self.input
+    fn get_map_object(&self) -> Option<&MapObject> {
+        self.map_object.as_ref()
     }
 }
 
@@ -76,6 +76,7 @@ impl Default for MapEngineStore {
                     move_y: 0.0,
                 },
             },
+            map_object: None,
         }
     }
 }

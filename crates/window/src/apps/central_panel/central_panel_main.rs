@@ -3,7 +3,7 @@ use crate::apps::store::raster_tile_layer_store::{
     RasterTileLayerStore, RasterTileLayerStoreTrait,
 };
 use domain::params::map_config::MAP_TILE_SIZE;
-use domain::types::gis_engine_type::{MapObject, Screen};
+use domain::types::gis_engine_type::{MapObject, MapXYZ, MoveXY, Screen};
 use eframe::egui;
 use engine::create_map_obj;
 
@@ -49,20 +49,51 @@ impl CentralPanelMain {
             height: available_size.y as f64,
         });
 
-        // ズーム処理
-        Self::handle_zoom_event(ui, ctx, engine_store);
+        // 地図領域の入力を取得
+        let viewport = ui.available_rect_before_wrap();
+        let response = ui.interact(
+            viewport,
+            ui.id().with("map_viewport"),
+            egui::Sense::click_and_drag(),
+        );
 
-        // 地図エンジン
-        let map_obj = match create_map_obj(engine_store.get_all()) {
+        // ズーム処理
+        Self::handle_zoom_event(&response, ctx, engine_store);
+
+        // パン移動量はフレームごとに適用し、前回の地図中心を基準にする。
+        let movement = Self::handle_pan_event(&response, ctx);
+
+        // 地図エンジンに渡す入力を組み立てる。
+        let mut engine_input = engine_store.get_all();
+        let previous_map_center = engine_store
+            .get_map_object()
+            .map(|map_object| map_object.center);
+        if let Some(center) = previous_map_center {
+            engine_input.map_xyz = MapXYZ {
+                latitude: center[1],
+                longitude: center[0],
+                zoom: engine_store.get_zoom(),
+            };
+        }
+        engine_input.movement = movement;
+
+        let map_obj = match create_map_obj(&engine_input) {
             Ok(map_obj) => map_obj,
             Err(error) => {
                 eprintln!("GISエンジンのエラーです: {error}");
                 return;
             }
         };
+        let map_xyz = MapXYZ {
+            latitude: map_obj.center[1],
+            longitude: map_obj.center[0],
+            zoom: engine_input.map_xyz.zoom,
+        };
 
         // ラスタータイル描画
         Self::render_raster_tiles(ui, &map_obj, raster_tile_layer_store);
+        engine_store.set_xyz(map_xyz);
+        engine_store.set_map_object(map_obj);
     }
 
     /// マウスホイールによるズーム操作を処理する。
@@ -71,33 +102,22 @@ impl CentralPanelMain {
     /// * `ui` - 描画するUIコンテキスト
     /// * `ctx` - eguiのコンテキスト
     /// * `engine_store` - 地図エンジンの状態を管理する
-    /// マウスホイールイベントによるズーム操作を処理する。
     fn handle_zoom_event(
-        ui: &mut egui::Ui,
+        response: &egui::Response,
         ctx: &egui::Context,
         engine_store: &mut MapEngineStore,
     ) {
-        let viewport = ui.available_rect_before_wrap();
-
-        let response = ui.interact(viewport, ui.id().with("map_viewport"), egui::Sense::hover());
-
-        // マウスカーソルが地図上にない場合は処理しない。
         if !response.hovered() {
             return;
         }
 
-        // 今フレームに発生したマウスホイールイベントを取得する。
         let scroll_directions: Vec<f32> = ctx.input(|input| {
             input
                 .events
                 .iter()
                 .filter_map(|event| {
                     if let egui::Event::MouseWheel { delta, .. } = event {
-                        if delta.y != 0.0 {
-                            Some(delta.y.signum())
-                        } else {
-                            None
-                        }
+                        (delta.y != 0.0).then_some(delta.y.signum())
                     } else {
                         None
                     }
@@ -111,19 +131,33 @@ impl CentralPanelMain {
 
         let mut zoom = engine_store.get_zoom();
 
-        // ホイールイベントごとにズームを1段階変更する。
         for direction in scroll_directions {
             zoom = if direction > 0.0 {
-                // direction > 0.0 の場合、ズームイン
                 zoom.saturating_add(1).min(22)
             } else {
-                // direction < 0.0 の場合、ズームアウト
                 zoom.saturating_sub(1)
             };
         }
 
         engine_store.set_zoom(zoom);
         ctx.request_repaint();
+    }
+
+    /// マウスドラッグによるフレーム単位の移動量を返す。
+    fn handle_pan_event(response: &egui::Response, ctx: &egui::Context) -> MoveXY {
+        if response.dragged() || response.drag_stopped() {
+            let delta = ctx.input(|input| input.pointer.delta());
+            ctx.request_repaint();
+            MoveXY {
+                move_x: f64::from(delta.x),
+                move_y: f64::from(delta.y),
+            }
+        } else {
+            MoveXY {
+                move_x: 0.0,
+                move_y: 0.0,
+            }
+        }
     }
 
     /// ラスタータイルを描画する。
