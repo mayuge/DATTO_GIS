@@ -9,6 +9,9 @@ pub trait MapEngineStoreTrait {
     fn set_xyz(&mut self, map_xyz: MapXYZ);
     fn get_xyz(&self) -> &MapXYZ;
 
+    fn set_zoom(&mut self, zoom: u32);
+    fn get_zoom(&self) -> u32;
+
     fn set_screen(&mut self, screen: Screen);
     fn get_screen(&self) -> &Screen;
 
@@ -25,6 +28,14 @@ impl MapEngineStoreTrait for MapEngineStore {
 
     fn get_xyz(&self) -> &MapXYZ {
         &self.input.map_xyz
+    }
+
+    fn set_zoom(&mut self, zoom: u32) {
+        self.input.map_xyz.zoom = zoom;
+    }
+
+    fn get_zoom(&self) -> u32 {
+        self.input.map_xyz.zoom
     }
 
     fn set_screen(&mut self, screen: Screen) {
