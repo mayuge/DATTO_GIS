@@ -1,12 +1,14 @@
 use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
-use crate::apps::store::map_layer_store::{RasterTileLayerStore, RasterTileLayerStoreTrait};
+use crate::apps::store::raster_tile_layer_store::{
+    RasterTileLayerStore, RasterTileLayerStoreTrait,
+};
 use domain::Screen;
 use eframe::egui;
 use engine::create_map_obj;
 
 pub struct CentralPanelMain {
     pub map_engine_store: MapEngineStore,
-    pub map_layer_store: RasterTileLayerStore,
+    pub raster_tile_layer_store: RasterTileLayerStore,
 }
 
 trait CentralPanelMainTrait {
@@ -23,7 +25,7 @@ impl Default for CentralPanelMain {
     fn default() -> Self {
         Self {
             map_engine_store: MapEngineStore::default(),
-            map_layer_store: RasterTileLayerStore::default(),
+            raster_tile_layer_store: RasterTileLayerStore::default(),
         }
     }
 }
@@ -34,7 +36,7 @@ impl CentralPanelMain {
         ui: &mut egui::Ui,
         ctx: &egui::Context,
         engine_store: &mut MapEngineStore,
-        layer_store: &RasterTileLayerStore,
+        raster_tile_layer_store: &RasterTileLayerStore,
     ) {
         // 地図を描画できる領域のサイズを取得
         let available_size = ui.available_size();
@@ -65,6 +67,8 @@ impl CentralPanelMain {
         println!("Tiles to fetch: {:?}", tiles);
 
         // レイヤーを呼び出す
-        let layers = layer_store.get_all();
+        let raster_tile_layers = raster_tile_layer_store.get_all();
+
+        
     }
 }

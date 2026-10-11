@@ -1,2 +1,2 @@
 pub mod map_engine_store;
-pub mod map_layer_store;
+pub mod raster_tile_layer_store;

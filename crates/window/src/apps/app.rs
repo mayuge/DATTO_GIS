@@ -1,6 +1,6 @@
 use crate::apps::central_panel::central_panel_main::CentralPanelMain;
 use crate::apps::store::map_engine_store::MapEngineStore;
-use crate::apps::store::map_layer_store::RasterTileLayerStore;
+use crate::apps::store::raster_tile_layer_store::RasterTileLayerStore;
 use eframe::egui;
 use std::sync::Arc;
 
