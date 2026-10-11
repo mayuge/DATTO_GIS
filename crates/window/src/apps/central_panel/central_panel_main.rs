@@ -162,8 +162,8 @@ impl CentralPanelMain {
             }
 
             for tile in &map_obj.tiles {
+                // タイルの描画位置を計算
                 let x = origin.x + offset_x + (tile.x as f32 - first_tile.x as f32) * MAP_TILE_SIZE;
-
                 let y = origin.y + offset_y + (tile.y as f32 - first_tile.y as f32) * MAP_TILE_SIZE;
 
                 let rect = egui::Rect::from_min_size(
