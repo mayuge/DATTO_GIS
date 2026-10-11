@@ -1,40 +1,6 @@
+pub use domain::{MapEngineInput, MapObject, MapXYZ, MoveXY, Screen, TileZXY};
 use ogc_tms::{BoundingBox, TileMatrixSet};
 use proj_core::Transform;
-
-pub struct MapXYZ {
-    pub latitude: f64,
-    pub longitude: f64,
-    pub zoom: u32,
-}
-
-pub struct MoveXY {
-    pub move_x: f64,
-    pub move_y: f64,
-}
-
-pub struct Screen {
-    pub width: f64,
-    pub height: f64,
-}
-
-pub struct TileZXY {
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
-}
-
-pub struct MapObject {
-    // WGS84: [longitude, latitude]
-    pub center: [f64; 2],
-
-    // WGS84: [min_lon, min_lat, max_lon, max_lat]
-    pub bbox: [f64; 4],
-
-    pub tiles: Vec<TileZXY>,
-
-    // 最初のタイルの画面上の配置位置 (px)
-    pub delta: [f64; 2],
-}
 
 /// MapXYZ が有効かどうかを検証する。
 pub fn validate_map_xyz(xyz: &MapXYZ) -> bool {
@@ -66,11 +32,11 @@ pub fn validate_screen(screen: &Screen) -> bool {
 ///
 /// movement は画面上のドラッグ移動量 (px)。
 /// 右方向・下方向へのドラッグを正の値とする。
-pub fn create_map_obj(
-    xyz: MapXYZ,
-    screen: Screen,
-    movement: MoveXY,
-) -> Result<MapObject, Box<dyn std::error::Error>> {
+pub fn create_map_obj(input: &MapEngineInput) -> Result<MapObject, Box<dyn std::error::Error>> {
+    let xyz = input.map_xyz;
+    let screen = input.screen;
+    let movement = input.movement;
+
     // 入力値の検証
     if !validate_map_xyz(&xyz) {
         return Err("緯度、経度、ズームレベルが無効です".into());

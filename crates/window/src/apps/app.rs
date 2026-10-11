@@ -1,3 +1,6 @@
+use crate::apps::central_panel::central_panel_main::CentralPanelMain;
+use crate::apps::store::map_engine_store::MapEngineStore;
+use crate::apps::store::map_layer_store::MapLayerStore;
 use eframe::egui;
 use std::sync::Arc;
 
@@ -57,31 +60,27 @@ fn setup_fonts(ctx: &egui::Context) {
 }
 
 /// アプリケーションの状態と画面を管理する。
-struct App;
+struct App {
+    central_panel: CentralPanelMain,
+    engine_store: MapEngineStore,
+    layer_store: MapLayerStore,
+}
 
 impl App {
     fn new() -> Self {
-        Self
+
+        Self {
+            central_panel: CentralPanelMain::default(),
+            engine_store: MapEngineStore::default(),
+            layer_store: MapLayerStore::default(),
+        }
     }
 }
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        ui.heading("DattoGIS");
-        ui.label("日本語フォントの表示テスト");
-
-        ui.separator();
-
-        // Material Icons: home
-        ui.label(egui::RichText::new("\u{e88a}").font(egui::FontId::new(
-            28.0,
-            egui::FontFamily::Name("material_icons".into()),
-        )));
-
-        // Material Icons: settings
-        ui.label(egui::RichText::new("\u{e8b8}").font(egui::FontId::new(
-            28.0,
-            egui::FontFamily::Name("material_icons".into()),
-        )));
+        let ctx = ui.ctx().clone();
+        self.central_panel
+            .show(ui, &ctx, &mut self.engine_store, &self.layer_store);
     }
 }
