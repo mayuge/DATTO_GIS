@@ -1,4 +1,4 @@
-use domain::RasterTileLayer;
+use domain::types::map_layer_type::RasterTileLayer;
 
 pub struct RasterTileLayerStore {
     layers: Vec<RasterTileLayer>,

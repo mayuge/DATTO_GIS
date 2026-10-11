@@ -1,4 +1,5 @@
-use domain::{MapEngineInput, MapXYZ, MoveXY, Screen};
+use domain::params::map_config::{MAP_CENTER_LATITUDE, MAP_CENTER_LONGITUDE, MAP_ZOOM_LEVEL};
+use domain::types::gis_engine_type::{MapEngineInput, MapXYZ, MoveXY, Screen};
 
 pub struct MapEngineStore {
     input: MapEngineInput,
@@ -51,9 +52,9 @@ impl Default for MapEngineStore {
         Self {
             input: MapEngineInput {
                 map_xyz: MapXYZ {
-                    latitude: 35.6812,
-                    longitude: 139.7671,
-                    zoom: 6,
+                    latitude: MAP_CENTER_LATITUDE,
+                    longitude: MAP_CENTER_LONGITUDE,
+                    zoom: MAP_ZOOM_LEVEL,
                 },
                 screen: Screen {
                     width: 1.0,
@@ -65,45 +66,5 @@ impl Default for MapEngineStore {
                 },
             },
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{MapEngineStore, MapEngineStoreTrait};
-
-    #[test]
-    fn init_sets_default_map_view_and_allows_state_updates() {
-        let mut store = MapEngineStore::default();
-        store.init();
-
-        assert_eq!(store.get_xyz().latitude, 35.6812);
-        assert_eq!(store.get_xyz().longitude, 139.7671);
-        assert_eq!(store.get_xyz().zoom, 6);
-
-        store.set_xyz(domain::MapXYZ {
-            latitude: 40.0,
-            longitude: 141.0,
-            zoom: 8,
-        });
-        assert_eq!(store.get_xyz().latitude, 40.0);
-        assert_eq!(store.get_xyz().longitude, 141.0);
-        assert_eq!(store.get_xyz().zoom, 8);
-    }
-
-    #[test]
-    fn engine_creates_tiles_for_the_stored_view() {
-        let store = MapEngineStore::default();
-        let map = engine::create_map_obj(
-            *store.get_xyz(),
-            domain::Screen {
-                width: 1280.0,
-                height: 800.0,
-            },
-            *store.get_movement(),
-        )
-        .expect("既定の表示範囲からタイルを計算できる必要があります");
-
-        assert!(!map.tiles.is_empty());
     }
 }

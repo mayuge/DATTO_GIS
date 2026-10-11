@@ -1,4 +1,6 @@
-pub use domain::{MapEngineInput, MapObject, MapXYZ, MoveXY, Screen, TileZXY};
+pub use domain::types::gis_engine_type::{
+    MapEngineInput, MapObject, MapXYZ, MoveXY, Screen, TileZXY,
+};
 use ogc_tms::{BoundingBox, TileMatrixSet};
 use proj_core::Transform;
 
