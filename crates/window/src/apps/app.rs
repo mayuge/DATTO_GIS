@@ -1,6 +1,6 @@
 use crate::apps::central_panel::central_panel_main::CentralPanelMain;
 use crate::apps::store::map_engine_store::MapEngineStore;
-use crate::apps::store::map_layer_store::MapLayerStore;
+use crate::apps::store::map_layer_store::RasterTileLayerStore;
 use eframe::egui;
 use std::sync::Arc;
 
@@ -63,16 +63,15 @@ fn setup_fonts(ctx: &egui::Context) {
 struct App {
     central_panel: CentralPanelMain,
     engine_store: MapEngineStore,
-    layer_store: MapLayerStore,
+    layer_store: RasterTileLayerStore,
 }
 
 impl App {
     fn new() -> Self {
-
         Self {
             central_panel: CentralPanelMain::default(),
             engine_store: MapEngineStore::default(),
-            layer_store: MapLayerStore::default(),
+            layer_store: RasterTileLayerStore::default(),
         }
     }
 }

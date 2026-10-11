@@ -1,16 +1,16 @@
 use domain::RasterTileLayer;
 
-pub struct MapLayerStore {
+pub struct RasterTileLayerStore {
     layers: Vec<RasterTileLayer>,
 }
 
-pub trait MapLayerStoreTrait {
+pub trait RasterTileLayerStoreTrait {
     fn add_layer(&mut self, layer: RasterTileLayer);
     fn remove_layer(&mut self, layer_id: &str);
-    fn get_layers(&self) -> &[RasterTileLayer];
+    fn get_all(&self) -> &[RasterTileLayer];
 }
 
-impl MapLayerStoreTrait for MapLayerStore {
+impl RasterTileLayerStoreTrait for RasterTileLayerStore {
     fn add_layer(&mut self, layer: RasterTileLayer) {
         self.layers.push(layer);
     }
@@ -19,12 +19,12 @@ impl MapLayerStoreTrait for MapLayerStore {
         self.layers.retain(|layer| layer.id != layer_id);
     }
 
-    fn get_layers(&self) -> &[RasterTileLayer] {
+    fn get_all(&self) -> &[RasterTileLayer] {
         &self.layers
     }
 }
 
-impl Default for MapLayerStore {
+impl Default for RasterTileLayerStore {
     fn default() -> Self {
         Self {
             layers: vec![RasterTileLayer {
