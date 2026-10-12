@@ -1,7 +1,7 @@
 use crate::apps::store::raster_tile_layer_store::{
     RasterTileLayerStore, RasterTileLayerStoreTrait,
 };
-use domain::params::design_token_config::SIDE_PANEL_WIDTH;
+use domain::params::design_token_config::{LAYER_LIST_HEIGHT, SIDE_PANEL_WIDTH};
 use eframe::egui;
 
 /// 左側のサイドパネルを管理する。
@@ -65,7 +65,7 @@ impl SidePanelMain {
                         let (_, dropped_payload) =
                             ui.dnd_drop_zone::<usize, ()>(egui::Frame::NONE, |ui| {
                                 *ui.visuals_mut() = layer_visuals.clone();
-                                ui.set_min_height(40.0);
+                                ui.set_min_height(LAYER_LIST_HEIGHT);
 
                                 ui.push_id(&id, |ui| {
                                     ui.horizontal(|ui| {
