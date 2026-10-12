@@ -5,21 +5,58 @@ pub struct RasterTileLayerStore {
 }
 
 pub trait RasterTileLayerStoreTrait {
+    fn toggle_visibility(&mut self, layer_id: &str);
+    fn set_opacity(&mut self, layer_id: &str, opacity: f32);
     fn add_layer(&mut self, layer: RasterTileLayer);
     fn remove_layer(&mut self, layer_id: &str);
-    fn get_all(&self) -> &[RasterTileLayer];
+    fn get_all_raster_tile_layers(&self) -> &[RasterTileLayer];
 }
 
 impl RasterTileLayerStoreTrait for RasterTileLayerStore {
+    /// レイヤーの表示/非表示を切り替える。
+    ///
+    /// # Arguments
+    /// * `layer_id` - 切り替えるレイヤーのID
+
+    fn toggle_visibility(&mut self, layer_id: &str) {
+        if let Some(layer) = self.layers.iter_mut().find(|layer| layer.id == layer_id) {
+            layer.visible = !layer.visible;
+        }
+    }
+
+    /// レイヤーの不透明度を設定する。
+    ///
+    /// # Arguments
+    /// * `layer_id` - 不透明度を設定するレイヤーのID
+    /// * `opacity` - 設定する不透明度（0.0〜1.0）
+    ///
+    fn set_opacity(&mut self, layer_id: &str, opacity: f32) {
+        if let Some(layer) = self.layers.iter_mut().find(|layer| layer.id == layer_id) {
+            layer.opacity = opacity.clamp(0.0, 1.0);
+        }
+    }
+
+    /// ラスタータイルレイヤーを追加する。
+    ///
+    /// # Arguments
+    /// * `layer` - 追加するラスタータイルレイヤー
     fn add_layer(&mut self, layer: RasterTileLayer) {
         self.layers.push(layer);
     }
 
+    /// ラスタータイルレイヤーを削除する。
+    ///
+    /// # Arguments
+    /// * `layer_id` - 削除するラスタータイルレイヤーのID
     fn remove_layer(&mut self, layer_id: &str) {
         self.layers.retain(|layer| layer.id != layer_id);
     }
 
-    fn get_all(&self) -> &[RasterTileLayer] {
+    /// すべてのラスタータイルレイヤーを取得する。
+    ///
+    /// # Returns
+    /// * `&[RasterTileLayer]` - すべてのラスタータイルレイヤーのスライス
+    fn get_all_raster_tile_layers(&self) -> &[RasterTileLayer] {
         &self.layers
     }
 }

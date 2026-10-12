@@ -1,4 +1,5 @@
 use crate::apps::central_panel::central_panel_main::CentralPanelMain;
+use crate::apps::side_panel::side_panel_main::SidePanelMain;
 use crate::apps::store::map_engine_store::MapEngineStore;
 use crate::apps::store::raster_tile_layer_store::RasterTileLayerStore;
 use eframe::egui;
@@ -63,24 +64,32 @@ fn setup_fonts(ctx: &egui::Context) {
 /// アプリケーションの状態と画面を管理する。
 struct App {
     central_panel: CentralPanelMain,
+    side_panel: SidePanelMain,
     engine_store: MapEngineStore,
-    layer_store: RasterTileLayerStore,
+    raster_tile_layer_store: RasterTileLayerStore,
 }
 
 impl App {
     fn new() -> Self {
         Self {
             central_panel: CentralPanelMain::default(),
+            side_panel: SidePanelMain::default(),
             engine_store: MapEngineStore::default(),
-            layer_store: RasterTileLayerStore::default(),
+            raster_tile_layer_store: RasterTileLayerStore::default(),
         }
     }
 }
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        let ctx = ui.ctx().clone();
-        self.central_panel
-            .show(ui, &ctx, &mut self.engine_store, &self.layer_store);
+        // eguiの左パネルが領域を確保した後、中央パネルが残りの領域を使う。
+        self.side_panel
+            .use_side_panel_main(ui, &mut self.raster_tile_layer_store);
+
+        self.central_panel.use_central_panel_main(
+            ui,
+            &mut self.engine_store,
+            &self.raster_tile_layer_store,
+        );
     }
 }

@@ -29,15 +29,17 @@ impl CentralPanelMain {
     /// * `ctx` - eguiのコンテキスト
     /// * `engine_store` - 地図エンジンの状態を管理するストア
     /// * `raster_tile_layer_store` - ラスタータイルレイヤーの状態を管理するストア
-    pub fn show(
+    pub fn use_central_panel_main(
         &mut self,
         ui: &mut egui::Ui,
-        ctx: &egui::Context,
         engine_store: &mut MapEngineStore,
         raster_tile_layer_store: &RasterTileLayerStore,
     ) {
-        // 描画領域
-        let available_size = ui.available_size();
+        let ctx = ui.ctx().clone();
+
+        // サイドパネルを除いた中央パネルのサイズを取得
+        let viewport = ui.available_rect_before_wrap();
+        let available_size = viewport.size();
 
         if available_size.x <= 0.0 || available_size.y <= 0.0 {
             return;
@@ -50,7 +52,6 @@ impl CentralPanelMain {
         });
 
         // 地図領域の入力を取得
-        let viewport = ui.available_rect_before_wrap();
         let response = ui.interact(
             viewport,
             ui.id().with("map_viewport"),
@@ -58,10 +59,10 @@ impl CentralPanelMain {
         );
 
         // ズーム処理
-        Self::handle_zoom_event(&response, ctx, engine_store);
+        Self::handle_zoom_event(&response, &ctx, engine_store);
 
         // パン移動量はフレームごとに適用し、前回の地図中心を基準にする。
-        let movement = Self::handle_pan_event(&response, ctx);
+        let movement = Self::handle_pan_event(&response, &ctx);
 
         // 地図エンジンに渡す入力を組み立てる。
         let mut engine_input = engine_store.get_map_engine_input();
@@ -178,10 +179,8 @@ impl CentralPanelMain {
             return;
         }
 
-        // 描画領域
-        let available_size = ui.available_size();
-        let origin = ui.min_rect().min;
-        let viewport = egui::Rect::from_min_size(origin, available_size);
+        let viewport = ui.available_rect_before_wrap();
+        let origin = viewport.min;
 
         // 最初のタイルを基準に配置
         let first_tile = &map_obj.tiles[0];
@@ -189,46 +188,52 @@ impl CentralPanelMain {
         let offset_x = map_obj.offset[0] as f32;
         let offset_y = map_obj.offset[1] as f32;
 
-        let layers = raster_tile_layer_store.get_all();
+        let layers = raster_tile_layer_store.get_all_raster_tile_layers();
 
-        // 下のレイヤーから描画
-        for layer in layers.iter().rev() {
-            // レイヤーが非表示または不透明度が0以下の場合は描画しない
-            if !layer.visible || layer.opacity <= 0.0 {
-                continue;
-            }
+        ui.scope_builder(
+            egui::UiBuilder::new()
+                .max_rect(viewport)
+                .layout(egui::Layout::top_down(egui::Align::Min)),
+            |ui| {
+                ui.set_clip_rect(viewport);
 
-            // 不透明度をアルファ値に変換
-            let alpha = (layer.opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
+                // 下のレイヤーから描画
+                for layer in layers.iter().rev() {
+                    if !layer.visible || layer.opacity <= 0.0 {
+                        continue;
+                    }
 
-            for tile in &map_obj.tiles {
-                // タイルの描画位置を計算
-                let x = origin.x + offset_x + (tile.x as f32 - first_tile.x as f32) * MAP_TILE_SIZE;
-                let y = origin.y + offset_y + (tile.y as f32 - first_tile.y as f32) * MAP_TILE_SIZE;
+                    let alpha = (layer.opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
 
-                let rect = egui::Rect::from_min_size(
-                    egui::pos2(x, y),
-                    egui::vec2(MAP_TILE_SIZE, MAP_TILE_SIZE),
-                );
+                    for tile in &map_obj.tiles {
+                        let x = origin.x
+                            + offset_x
+                            + (tile.x as f32 - first_tile.x as f32) * MAP_TILE_SIZE;
+                        let y = origin.y
+                            + offset_y
+                            + (tile.y as f32 - first_tile.y as f32) * MAP_TILE_SIZE;
 
-                // 画面外のタイルは描画しない
-                if !rect.intersects(viewport) {
-                    continue;
+                        let rect = egui::Rect::from_min_size(
+                            egui::pos2(x, y),
+                            egui::vec2(MAP_TILE_SIZE, MAP_TILE_SIZE),
+                        );
+                        if !rect.intersects(viewport) {
+                            continue;
+                        }
+
+                        let url = layer
+                            .url
+                            .replace("{z}", &tile.z.to_string())
+                            .replace("{x}", &tile.x.to_string())
+                            .replace("{y}", &tile.y.to_string());
+
+                        ui.put(
+                            rect,
+                            egui::Image::new(url).tint(egui::Color32::from_white_alpha(alpha)),
+                        );
+                    }
                 }
-
-                // タイルURLを生成
-                let url = layer
-                    .url
-                    .replace("{z}", &tile.z.to_string())
-                    .replace("{x}", &tile.x.to_string())
-                    .replace("{y}", &tile.y.to_string());
-
-                // タイル画像を描画
-                ui.put(
-                    rect,
-                    egui::Image::new(url).tint(egui::Color32::from_white_alpha(alpha)),
-                );
-            }
-        }
+            },
+        );
     }
 }
