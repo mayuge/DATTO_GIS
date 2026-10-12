@@ -2,7 +2,7 @@ use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
 use crate::apps::store::raster_tile_layer_store::{
     RasterTileLayerStore, RasterTileLayerStoreTrait,
 };
-use domain::params::map_config::MAP_TILE_SIZE;
+use domain::params::map_config::{MAP_MAX_ZOOM_LEVEL, MAP_MIN_ZOOM_LEVEL, MAP_TILE_SIZE};
 use domain::types::gis_engine_type::{MapObject, MapXYZ, MoveXY, Screen};
 use eframe::egui;
 use engine::create_map_obj;
@@ -64,7 +64,7 @@ impl CentralPanelMain {
         let movement = Self::handle_pan_event(&response, ctx);
 
         // 地図エンジンに渡す入力を組み立てる。
-        let mut engine_input = engine_store.get_all();
+        let mut engine_input = engine_store.get_map_engine_input();
         let previous_map_center = engine_store
             .get_map_object()
             .map(|map_object| map_object.center);
@@ -133,9 +133,11 @@ impl CentralPanelMain {
 
         for direction in scroll_directions {
             zoom = if direction > 0.0 {
-                zoom.saturating_add(1).min(22)
+                //ズームレベルが最大値でない場合、ズームレベルを1つ増やす
+                zoom.saturating_add(1).min(MAP_MAX_ZOOM_LEVEL)
             } else {
-                zoom.saturating_sub(1)
+                //ズームレベルが最小値でない場合、ズームレベルを1つ減らす
+                zoom.saturating_sub(1).max(MAP_MIN_ZOOM_LEVEL)
             };
         }
 
@@ -191,9 +193,13 @@ impl CentralPanelMain {
 
         // 下のレイヤーから描画
         for layer in layers.iter().rev() {
+            // レイヤーが非表示または不透明度が0以下の場合は描画しない
             if !layer.visible || layer.opacity <= 0.0 {
                 continue;
             }
+
+            // 不透明度をアルファ値に変換
+            let alpha = (layer.opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
 
             for tile in &map_obj.tiles {
                 // タイルの描画位置を計算
@@ -217,7 +223,11 @@ impl CentralPanelMain {
                     .replace("{x}", &tile.x.to_string())
                     .replace("{y}", &tile.y.to_string());
 
-                ui.put(rect, egui::Image::new(url));
+                // タイル画像を描画
+                ui.put(
+                    rect,
+                    egui::Image::new(url).tint(egui::Color32::from_white_alpha(alpha)),
+                );
             }
         }
     }

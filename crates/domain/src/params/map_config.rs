@@ -15,3 +15,9 @@ pub const DATA_PROJ_EPSG: u32 = 4326;
 
 /// タイル1枚のサイズ（ピクセル）
 pub const MAP_TILE_SIZE: f32 = 256.0;
+
+/// 最大ズームレベル
+pub const MAP_MAX_ZOOM_LEVEL: u32 = 24;
+
+/// 最小ズームレベル
+pub const MAP_MIN_ZOOM_LEVEL: u32 = 0;

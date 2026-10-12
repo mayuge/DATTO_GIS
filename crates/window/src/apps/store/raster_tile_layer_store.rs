@@ -27,14 +27,24 @@ impl RasterTileLayerStoreTrait for RasterTileLayerStore {
 impl Default for RasterTileLayerStore {
     fn default() -> Self {
         Self {
-            layers: vec![RasterTileLayer {
-                id: "openstreetmap".to_owned(),
-                name: "OpenStreetMap".to_owned(),
-                url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png".to_owned(),
-                opacity: 1.0,
-                visible: true,
-                attribution: Some("© OpenStreetMap contributors".to_owned()),
-            }],
+            layers: vec![
+                RasterTileLayer {
+                    id: String::from("openstreetmap"),
+                    name: String::from("OpenStreetMap"),
+                    url: String::from("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+                    opacity: 0.5,
+                    visible: true,
+                    attribution: Some(String::from("© OpenStreetMap contributors")),
+                },
+                RasterTileLayer {
+                    id: String::from("gsi_std"),
+                    name: String::from("GSI Standard"),
+                    url: String::from("https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png"),
+                    opacity: 0.5,
+                    visible: true,
+                    attribution: Some(String::from("地理院タイル")),
+                },
+            ],
         }
     }
 }

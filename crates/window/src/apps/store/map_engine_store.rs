@@ -16,7 +16,7 @@ pub trait MapEngineStoreTrait {
     fn set_screen(&mut self, screen: Screen);
     fn get_screen(&self) -> &Screen;
 
-    fn get_all(&self) -> MapEngineInput;
+    fn get_map_engine_input(&self) -> MapEngineInput;
 
     fn set_map_object(&mut self, map_object: MapObject);
     fn get_map_object(&self) -> Option<&MapObject>;
@@ -47,7 +47,7 @@ impl MapEngineStoreTrait for MapEngineStore {
         &self.input.screen
     }
 
-    fn get_all(&self) -> MapEngineInput {
+    fn get_map_engine_input(&self) -> MapEngineInput {
         self.input
     }
     fn set_map_object(&mut self, map_object: MapObject) {
