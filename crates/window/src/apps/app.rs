@@ -19,6 +19,7 @@ pub fn create_app() {
         "DattoGIS",
         options,
         Box::new(|cc| {
+            cc.egui_ctx.set_theme(egui::ThemePreference::Dark);
             egui_extras::install_image_loaders(&cc.egui_ctx);
             setup_fonts(&cc.egui_ctx);
             Ok(Box::new(App::new()))

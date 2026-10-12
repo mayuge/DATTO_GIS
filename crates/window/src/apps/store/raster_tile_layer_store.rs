@@ -10,6 +10,7 @@ pub trait RasterTileLayerStoreTrait {
     fn add_layer(&mut self, layer: RasterTileLayer);
     fn remove_layer(&mut self, layer_id: &str);
     fn get_all_raster_tile_layers(&self) -> &[RasterTileLayer];
+    fn move_layer(&mut self, from_index: usize, to_index: usize);
 }
 
 impl RasterTileLayerStoreTrait for RasterTileLayerStore {
@@ -58,6 +59,22 @@ impl RasterTileLayerStoreTrait for RasterTileLayerStore {
     /// * `&[RasterTileLayer]` - すべてのラスタータイルレイヤーのスライス
     fn get_all_raster_tile_layers(&self) -> &[RasterTileLayer] {
         &self.layers
+    }
+
+    /// レイヤーの順番を変更する。
+    ///
+    /// # Arguments
+    /// * `from_index` - 移動元のインデックス
+    /// * `to_index` - 移動先のインデックス
+    fn move_layer(&mut self, from_index: usize, to_index: usize) {
+        let len = self.layers.len();
+
+        if from_index >= len || to_index >= len || from_index == to_index {
+            return;
+        }
+
+        let layer = self.layers.remove(from_index);
+        self.layers.insert(to_index, layer);
     }
 }
 
