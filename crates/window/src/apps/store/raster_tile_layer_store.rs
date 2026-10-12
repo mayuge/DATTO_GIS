@@ -98,6 +98,14 @@ impl Default for RasterTileLayerStore {
                     visible: true,
                     attribution: Some(String::from("地理院タイル")),
                 },
+                RasterTileLayer {
+                    id: String::from("gsi_pale"),
+                    name: String::from("GSI Pale"),
+                    url: String::from("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"),
+                    opacity: 0.5,
+                    visible: true,
+                    attribution: Some(String::from("地理院タイル")),
+                },
             ],
         }
     }
