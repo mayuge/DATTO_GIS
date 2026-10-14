@@ -25,6 +25,8 @@ impl SidePanelMain {
             .min_size(SIDE_PANEL_WIDTH)
             .resizable(true)
             .show(ui, |ui| {
+                ui.label(egui::RichText::new("レイヤー").size(12.0));
+                ui.separator();
                 ui.separator();
                 ui.label(egui::RichText::new("ベースマップ").size(12.0));
                 ui.separator();
