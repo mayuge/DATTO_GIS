@@ -83,26 +83,26 @@ impl Default for RasterTileLayerStore {
         Self {
             layers: vec![
                 RasterTileLayer {
-                    id: String::from("openstreetmap"),
-                    name: String::from("OpenStreetMap"),
-                    url: String::from("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
-                    opacity: 0.5,
-                    visible: true,
-                    attribution: Some(String::from("© OpenStreetMap contributors")),
-                },
-                RasterTileLayer {
                     id: String::from("gsi_std"),
                     name: String::from("GSI Standard"),
                     url: String::from("https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png"),
-                    opacity: 0.5,
+                    opacity: 1.0,
                     visible: true,
                     attribution: Some(String::from("地理院タイル")),
+                },
+                RasterTileLayer {
+                    id: String::from("openstreetmap"),
+                    name: String::from("OpenStreetMap"),
+                    url: String::from("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+                    opacity: 1.0,
+                    visible: true,
+                    attribution: Some(String::from("© OpenStreetMap contributors")),
                 },
                 RasterTileLayer {
                     id: String::from("gsi_pale"),
                     name: String::from("GSI Pale"),
                     url: String::from("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"),
-                    opacity: 0.5,
+                    opacity: 1.0,
                     visible: true,
                     attribution: Some(String::from("地理院タイル")),
                 },

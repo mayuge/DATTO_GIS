@@ -2,6 +2,7 @@ use crate::apps::bottom_panel::bottom_panel_main::BottomPanelMain;
 use crate::apps::central_panel::central_panel_main::CentralPanelMain;
 use crate::apps::side_panel::side_panel_main::SidePanelMain;
 use crate::apps::store::map_engine_store::MapEngineStore;
+use crate::apps::store::panel_visible_store::PanelVisibleStore;
 use crate::apps::store::raster_tile_layer_store::RasterTileLayerStore;
 use crate::apps::top_panel::top_panel_main::TopPanelMain;
 use eframe::egui;
@@ -70,7 +71,7 @@ struct App {
     bottom_panel: BottomPanelMain,
     central_panel: CentralPanelMain,
     side_panel: SidePanelMain,
-    side_panel_visible: bool,
+    panel_visible_store: PanelVisibleStore,
     engine_store: MapEngineStore,
     raster_tile_layer_store: RasterTileLayerStore,
 }
@@ -82,7 +83,7 @@ impl App {
             bottom_panel: BottomPanelMain::default(),
             central_panel: CentralPanelMain::default(),
             side_panel: SidePanelMain::default(),
-            side_panel_visible: true,
+            panel_visible_store: PanelVisibleStore::default(),
             engine_store: MapEngineStore::default(),
             raster_tile_layer_store: RasterTileLayerStore::default(),
         }
@@ -91,11 +92,12 @@ impl App {
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        self.top_panel.use_top_panel_main(
-            ui,
-            &mut self.engine_store,
-            &mut self.side_panel_visible,
-        );
+        self.top_panel
+            .use_top_panel_main(
+                ui,
+                &mut self.panel_visible_store,
+                &mut self.raster_tile_layer_store,
+            );
 
         self.bottom_panel.use_bottom_panel_main(
             ui,
@@ -104,7 +106,7 @@ impl eframe::App for App {
         );
 
         // 上部・下部・左パネルが領域を確保した後、中央パネルが残りの領域を使う。
-        if self.side_panel_visible {
+        if self.panel_visible_store.side_panel {
             self.side_panel
                 .use_side_panel_main(ui, &mut self.raster_tile_layer_store);
         }
