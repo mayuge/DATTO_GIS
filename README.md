@@ -26,3 +26,9 @@ trunk serve
 
 既定の URL は <http://localhost:8080> です。タイル画像を表示するため、
 ブラウザからアクセスできる HTTPS の XYZ タイル URL を使用してください。
+
+- githubPages公開する場合
+```
+trunk build --release --public-url "/DATTO_GIS/"
+```
+作られたdistフォルダを公開するフォルダに持っていく
