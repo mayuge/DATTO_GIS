@@ -14,7 +14,6 @@ pub trait MapEngineStoreTrait {
     fn get_zoom(&self) -> u32;
 
     fn set_screen(&mut self, screen: Screen);
-    fn get_screen(&self) -> &Screen;
 
     fn get_map_engine_input(&self) -> MapEngineInput;
 
@@ -29,6 +28,8 @@ impl MapEngineStoreTrait for MapEngineStore {
     /// * `map_xyz` - 緯度・経度・ズームレベル
     fn set_xyz(&mut self, map_xyz: MapXYZ) {
         self.input.map_xyz = map_xyz;
+        // 地図オブジェクトをリセットする。
+        self.map_object = None;
     }
 
     /// 緯度・経度・ズームレベルを取得する。
@@ -61,14 +62,6 @@ impl MapEngineStoreTrait for MapEngineStore {
     /// * `screen` - 画面サイズ
     fn set_screen(&mut self, screen: Screen) {
         self.input.screen = screen;
-    }
-
-    /// 画面サイズを取得する。
-    ///    
-    /// # Returns
-    /// 画面サイズ
-    fn get_screen(&self) -> &Screen {
-        &self.input.screen
     }
 
     /// 地図エンジンの入力を取得する。

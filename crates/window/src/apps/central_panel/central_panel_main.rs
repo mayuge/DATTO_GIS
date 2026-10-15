@@ -7,19 +7,7 @@ use domain::types::gis_engine_type::{MapObject, MapXYZ, MoveXY, Screen};
 use eframe::egui;
 use engine::create_map_obj;
 
-pub struct CentralPanelMain {
-    pub map_engine_store: MapEngineStore,
-    pub raster_tile_layer_store: RasterTileLayerStore,
-}
-
-impl Default for CentralPanelMain {
-    fn default() -> Self {
-        Self {
-            map_engine_store: MapEngineStore::default(),
-            raster_tile_layer_store: RasterTileLayerStore::default(),
-        }
-    }
-}
+pub struct CentralPanelMain; 
 
 impl CentralPanelMain {
     /// 中央パネルを描画する。
@@ -92,7 +80,12 @@ impl CentralPanelMain {
         };
 
         // ラスタータイル描画
-        Self::render_raster_tiles(ui, &map_obj, raster_tile_layer_store);
+        Self::render_raster_tiles(
+            ui,
+            &map_obj,
+            raster_tile_layer_store,
+            engine_input.map_xyz.zoom,
+        );
         engine_store.set_xyz(map_xyz);
         engine_store.set_map_object(map_obj);
     }
@@ -173,6 +166,7 @@ impl CentralPanelMain {
         ui: &mut egui::Ui,
         map_obj: &MapObject,
         raster_tile_layer_store: &RasterTileLayerStore,
+        zoom: u32,
     ) {
         // タイルがない場合は描画しない
         if map_obj.tiles.is_empty() {
@@ -199,10 +193,22 @@ impl CentralPanelMain {
 
                 // 下のレイヤーから描画
                 for layer in layers.iter().rev() {
+                    //レイヤーがオフまたは不透明度が0以下の場合は描画しない
                     if !layer.visible || layer.opacity <= 0.0 {
                         continue;
                     }
+                    // 最大・最小ズーム範囲ではない場合は描画しない
+                    if layer
+                        .min_zoom
+                        .is_some_and(|min_zoom| zoom < u32::from(min_zoom))
+                        || layer
+                            .max_zoom
+                            .is_some_and(|max_zoom| zoom > u32::from(max_zoom))
+                    {
+                        continue;
+                    }
 
+                    // レイヤーの不透明度をアルファ値に変換
                     let alpha = (layer.opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
 
                     for tile in &map_obj.tiles {
@@ -217,6 +223,7 @@ impl CentralPanelMain {
                             egui::pos2(x, y),
                             egui::vec2(MAP_TILE_SIZE, MAP_TILE_SIZE),
                         );
+                        // ビューポートに含まれていないタイルは描画しない
                         if !rect.intersects(viewport) {
                             continue;
                         }

@@ -88,7 +88,12 @@ impl Default for RasterTileLayerStore {
                     url: String::from("https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png"),
                     opacity: 1.0,
                     visible: true,
-                    attribution: Some(String::from("地理院タイル")),
+                    min_zoom: Some(0),
+                    max_zoom: Some(18),
+                    attribution: Some((
+                        String::from("地理院タイル"),
+                        String::from("https://maps.gsi.go.jp/development/ichiran.html"),
+                    )),
                 },
                 RasterTileLayer {
                     id: String::from("openstreetmap"),
@@ -96,7 +101,12 @@ impl Default for RasterTileLayerStore {
                     url: String::from("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
                     opacity: 1.0,
                     visible: true,
-                    attribution: Some(String::from("© OpenStreetMap contributors")),
+                    min_zoom: Some(0),
+                    max_zoom: Some(19),
+                    attribution: Some((
+                        String::from("© OpenStreetMap contributors"),
+                        String::from("https://www.openstreetmap.org/copyright"),
+                    )),
                 },
                 RasterTileLayer {
                     id: String::from("gsi_pale"),
@@ -104,7 +114,12 @@ impl Default for RasterTileLayerStore {
                     url: String::from("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"),
                     opacity: 1.0,
                     visible: true,
-                    attribution: Some(String::from("地理院タイル")),
+                    min_zoom: Some(0),
+                    max_zoom: Some(18),
+                    attribution: Some((
+                        String::from("地理院タイル"),
+                        String::from("https://maps.gsi.go.jp/development/ichiran.html"),
+                    )),
                 },
             ],
         }

@@ -9,6 +9,7 @@ use eframe::egui;
 use std::sync::Arc;
 
 /// アプリケーションを起動する。
+#[cfg(not(target_arch = "wasm32"))]
 pub fn create_app() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -32,7 +33,7 @@ pub fn create_app() {
 }
 
 /// フォントを登録する。
-fn setup_fonts(ctx: &egui::Context) {
+pub(crate) fn setup_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
 
     // Noto Sans JP
@@ -66,7 +67,7 @@ fn setup_fonts(ctx: &egui::Context) {
 }
 
 /// アプリケーションの状態と画面を管理する。
-struct App {
+pub(crate) struct App {
     top_panel: TopPanelMain,
     bottom_panel: BottomPanelMain,
     central_panel: CentralPanelMain,
@@ -77,11 +78,11 @@ struct App {
 }
 
 impl App {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             top_panel: TopPanelMain::default(),
             bottom_panel: BottomPanelMain::default(),
-            central_panel: CentralPanelMain::default(),
+            central_panel: CentralPanelMain,
             side_panel: SidePanelMain::default(),
             panel_visible_store: PanelVisibleStore::default(),
             engine_store: MapEngineStore::default(),
@@ -90,14 +91,19 @@ impl App {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn create_app_state() -> App {
+    App::new()
+}
+
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        self.top_panel
-            .use_top_panel_main(
-                ui,
-                &mut self.panel_visible_store,
-                &mut self.raster_tile_layer_store,
-            );
+        self.top_panel.use_top_panel_main(
+            ui,
+            &mut self.panel_visible_store,
+            &mut self.raster_tile_layer_store,
+            &mut self.engine_store,
+        );
 
         self.bottom_panel.use_bottom_panel_main(
             ui,

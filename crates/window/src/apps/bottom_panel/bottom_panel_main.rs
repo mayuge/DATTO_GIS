@@ -48,12 +48,12 @@ impl BottomPanelMain {
                 }
 
                 // 表示中のレイヤーの出典を重複なしで右寄せ表示する。
-                let mut attributions: Vec<&str> = Vec::new();
+                let mut attributions: Vec<&(String, String)> = Vec::new();
                 for layer in raster_tile_layer_store.get_all_raster_tile_layers() {
                     if !layer.visible || layer.opacity <= 0.0 {
                         continue;
                     }
-                    if let Some(attribution) = layer.attribution.as_deref() {
+                    if let Some(attribution) = layer.attribution.as_ref() {
                         if !attributions.contains(&attribution) {
                             attributions.push(attribution);
                         }
@@ -62,7 +62,16 @@ impl BottomPanelMain {
 
                 if !attributions.is_empty() {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.label(attributions.join(" | "));
+                        for (index, (label, url)) in attributions.iter().rev().enumerate() {
+                            if index > 0 {
+                                ui.label("|");
+                            }
+                            if url.is_empty() {
+                                ui.label(label);
+                            } else {
+                                ui.hyperlink_to(if label.is_empty() { url } else { label }, url);
+                            }
+                        }
                     });
                 }
             });

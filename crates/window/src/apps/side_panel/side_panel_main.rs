@@ -25,12 +25,6 @@ impl SidePanelMain {
             .min_size(SIDE_PANEL_WIDTH)
             .resizable(true)
             .show(ui, |ui| {
-                ui.label(egui::RichText::new("レイヤー").size(12.0));
-                ui.separator();
-                ui.separator();
-                ui.label(egui::RichText::new("ベースマップ").size(12.0));
-                ui.separator();
-
                 // 表示中にストアを変更しても安全なように、
                 // レイヤー情報をコピーしておく。
                 let layers: Vec<(String, String, bool, f32)> = raster_tile_layer_store
@@ -92,27 +86,37 @@ impl SidePanelMain {
                                                 egui::Stroke::new(2.0, egui::Color32::WHITE);
 
                                             ui.vertical(|ui| {
-                                                if ui.checkbox(&mut visible, &name).changed() {
+                                                let visibility_response =
+                                                    ui.checkbox(&mut visible, &name);
+                                                if visibility_response.changed() {
                                                     raster_tile_layer_store.toggle_visibility(&id);
                                                 }
+                                                Self::show_layer_context_menu(
+                                                    &visibility_response,
+                                                    raster_tile_layer_store,
+                                                    &id,
+                                                );
 
-                                                if ui
-                                                    .add(
-                                                        egui::Slider::new(&mut opacity, 0.0..=1.0)
-                                                            .show_value(false),
-                                                    )
-                                                    .changed()
-                                                {
+                                                let opacity_response = ui.add(
+                                                    egui::Slider::new(&mut opacity, 0.0..=1.0)
+                                                        .show_value(false),
+                                                );
+                                                if opacity_response.changed() {
                                                     raster_tile_layer_store
                                                         .set_opacity(&id, opacity);
                                                 }
+                                                Self::show_layer_context_menu(
+                                                    &opacity_response,
+                                                    raster_tile_layer_store,
+                                                    &id,
+                                                );
                                             });
                                         });
 
                                         ui.with_layout(
                                             egui::Layout::right_to_left(egui::Align::Center),
                                             |ui| {
-                                                ui.dnd_drag_source(
+                                                let drag_response = ui.dnd_drag_source(
                                                     egui::Id::new(("raster_layer_drag", &id)),
                                                     position,
                                                     |ui| {
@@ -127,6 +131,11 @@ impl SidePanelMain {
                                                             ),
                                                         );
                                                     },
+                                                );
+                                                Self::show_layer_context_menu(
+                                                    &drag_response.response,
+                                                    raster_tile_layer_store,
+                                                    &id,
                                                 );
                                             },
                                         );
@@ -150,5 +159,23 @@ impl SidePanelMain {
                     raster_tile_layer_store.move_layer(from_position, to_position);
                 }
             });
+    }
+
+    /// レイヤーのコンテキストメニューを表示する
+    /// # 引数
+    /// - `response`: コンテキストメニューを表示する対象の `egui::Response`
+    /// - `raster_tile_layer_store`: レイヤーの管理を行う `RasterTileLayerStore`
+    /// - `layer_id`: コンテキストメニューを表示するレイヤーのID
+    fn show_layer_context_menu(
+        response: &egui::Response,
+        raster_tile_layer_store: &mut RasterTileLayerStore,
+        layer_id: &str,
+    ) {
+        response.context_menu(|ui| {
+            if ui.button("レイヤーを削除").clicked() {
+                raster_tile_layer_store.remove_layer(layer_id);
+                ui.close();
+            }
+        });
     }
 }

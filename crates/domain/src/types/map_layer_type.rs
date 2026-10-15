@@ -5,5 +5,7 @@ pub struct RasterTileLayer {
     pub url: String,
     pub opacity: f32,
     pub visible: bool,
-    pub attribution: Option<String>,
+    pub min_zoom: Option<u8>,
+    pub max_zoom: Option<u8>,
+    pub attribution: Option<(String, String)>,
 }
