@@ -14,7 +14,7 @@ pub trait MapEngineStoreTrait {
     fn get_zoom(&self) -> u32;
 
     fn set_screen(&mut self, screen: Screen);
-
+    
     fn get_map_engine_input(&self) -> MapEngineInput;
 
     fn set_map_object(&mut self, map_object: MapObject);
@@ -85,7 +85,7 @@ impl MapEngineStoreTrait for MapEngineStore {
     fn get_map_object(&self) -> Option<&MapObject> {
         self.map_object.as_ref()
     }
-}
+ }
 
 impl Default for MapEngineStore {
     fn default() -> Self {

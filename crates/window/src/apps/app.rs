@@ -3,7 +3,7 @@ use crate::apps::central_panel::central_panel_main::CentralPanelMain;
 use crate::apps::side_panel::side_panel_main::SidePanelMain;
 use crate::apps::store::map_engine_store::MapEngineStore;
 use crate::apps::store::panel_visible_store::PanelVisibleStore;
-use crate::apps::store::raster_tile_layer_store::RasterTileLayerStore;
+use crate::apps::store::map_layer_store::MapLayerStore;
 use crate::apps::top_panel::top_panel_main::TopPanelMain;
 use eframe::egui;
 use std::sync::Arc;
@@ -74,23 +74,25 @@ pub(crate) struct App {
     side_panel: SidePanelMain,
     panel_visible_store: PanelVisibleStore,
     engine_store: MapEngineStore,
-    raster_tile_layer_store: RasterTileLayerStore,
+    map_layer_store: MapLayerStore,
 }
 
+/// アプリケーションの初期化とUI描画を行う実装。
 impl App {
     pub(crate) fn new() -> Self {
         Self {
             top_panel: TopPanelMain::default(),
             bottom_panel: BottomPanelMain::default(),
-            central_panel: CentralPanelMain,
+            central_panel: CentralPanelMain::default(),
             side_panel: SidePanelMain::default(),
             panel_visible_store: PanelVisibleStore::default(),
             engine_store: MapEngineStore::default(),
-            raster_tile_layer_store: RasterTileLayerStore::default(),
+            map_layer_store: MapLayerStore::default(),
         }
     }
 }
 
+/// WASM環境でアプリケーションの状態を作成する。
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn create_app_state() -> App {
     App::new()
@@ -98,29 +100,30 @@ pub(crate) fn create_app_state() -> App {
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // 上部パネルを描画する。
         self.top_panel.use_top_panel_main(
             ui,
             &mut self.panel_visible_store,
-            &mut self.raster_tile_layer_store,
+            &mut self.map_layer_store,
             &mut self.engine_store,
         );
 
+        // ボトムパネルを描画する。
         self.bottom_panel.use_bottom_panel_main(
             ui,
             &self.engine_store,
-            &self.raster_tile_layer_store,
+            &self.map_layer_store,
         );
 
-        // 上部・下部・左パネルが領域を確保した後、中央パネルが残りの領域を使う。
-        if self.panel_visible_store.side_panel {
-            self.side_panel
-                .use_side_panel_main(ui, &mut self.raster_tile_layer_store);
-        }
+        // 左側のサイドパネルを描画する。
+        self.side_panel
+        .use_side_panel_main(ui, &mut self.map_layer_store);
 
+        // 中央パネルを描画する。
         self.central_panel.use_central_panel_main(
             ui,
             &mut self.engine_store,
-            &self.raster_tile_layer_store,
+            &mut self.map_layer_store,
         );
     }
 }

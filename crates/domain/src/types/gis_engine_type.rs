@@ -24,6 +24,8 @@ pub struct TileZXY {
     pub z: u32,
 }
 
+
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct MapObject {
     // WGS84: [longitude, latitude]
@@ -43,4 +45,11 @@ pub struct MapEngineInput {
     pub map_xyz: MapXYZ,
     pub screen: Screen,
     pub movement: MoveXY,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SetPictureLayerInput {
+    pub map_xyz: MapXYZ,
+    pub map_screen_size: Screen,
+    pub picture_size: Screen,
 }

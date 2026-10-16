@@ -1,6 +1,4 @@
-use crate::apps::store::raster_tile_layer_store::{
-    RasterTileLayerStore, RasterTileLayerStoreTrait,
-};
+use crate::apps::store::map_layer_store::{MapLayerStore, MapLayerStoreTrait};
 use domain::params::design_token_config::{LAYER_LIST_HEIGHT, SIDE_PANEL_WIDTH};
 use eframe::egui;
 
@@ -13,12 +11,12 @@ impl SidePanelMain {
     ///
     /// # Arguments
     /// * `ui` - 描画するUIコンテキスト
-    /// * `raster_tile_layer_store` - ラスタータイルレイヤーの状態を管理するストア
+    /// * `map_layer_store` - マップレイヤーの状態を管理するストア
     ///
     pub fn use_side_panel_main(
         &mut self,
         ui: &mut egui::Ui,
-        raster_tile_layer_store: &mut RasterTileLayerStore,
+        map_layer_store: &mut MapLayerStore,
     ) {
         egui::Panel::left("side_panel")
             .default_size(SIDE_PANEL_WIDTH)
@@ -27,18 +25,7 @@ impl SidePanelMain {
             .show(ui, |ui| {
                 // 表示中にストアを変更しても安全なように、
                 // レイヤー情報をコピーしておく。
-                let layers: Vec<(String, String, bool, f32)> = raster_tile_layer_store
-                    .get_all_raster_tile_layers()
-                    .iter()
-                    .map(|layer| {
-                        (
-                            layer.id.clone(),
-                            layer.name.clone(),
-                            layer.visible,
-                            layer.opacity,
-                        )
-                    })
-                    .collect();
+                let layers = map_layer_store.get_layer_list();
 
                 if layers.is_empty() {
                     ui.label("レイヤーがありません");
@@ -89,11 +76,11 @@ impl SidePanelMain {
                                                 let visibility_response =
                                                     ui.checkbox(&mut visible, &name);
                                                 if visibility_response.changed() {
-                                                    raster_tile_layer_store.toggle_visibility(&id);
+                                                    map_layer_store.toggle_visibility(&id);
                                                 }
                                                 Self::show_layer_context_menu(
                                                     &visibility_response,
-                                                    raster_tile_layer_store,
+                                                    map_layer_store,
                                                     &id,
                                                 );
 
@@ -102,12 +89,11 @@ impl SidePanelMain {
                                                         .show_value(false),
                                                 );
                                                 if opacity_response.changed() {
-                                                    raster_tile_layer_store
-                                                        .set_opacity(&id, opacity);
+                                                    map_layer_store.set_opacity(&id, opacity);
                                                 }
                                                 Self::show_layer_context_menu(
                                                     &opacity_response,
-                                                    raster_tile_layer_store,
+                                                    map_layer_store,
                                                     &id,
                                                 );
                                             });
@@ -134,7 +120,7 @@ impl SidePanelMain {
                                                 );
                                                 Self::show_layer_context_menu(
                                                     &drag_response.response,
-                                                    raster_tile_layer_store,
+                                                    map_layer_store,
                                                     &id,
                                                 );
                                             },
@@ -156,7 +142,7 @@ impl SidePanelMain {
 
                 // 一覧の描画が終わってから並び替える。
                 if let Some((from_position, to_position)) = move_positions {
-                    raster_tile_layer_store.move_layer(from_position, to_position);
+                    map_layer_store.move_layer(from_position, to_position);
                 }
             });
     }
@@ -164,16 +150,16 @@ impl SidePanelMain {
     /// レイヤーのコンテキストメニューを表示する
     /// # 引数
     /// - `response`: コンテキストメニューを表示する対象の `egui::Response`
-    /// - `raster_tile_layer_store`: レイヤーの管理を行う `RasterTileLayerStore`
+    /// - `map_layer_store`: レイヤーの管理を行う `MapLayerStore`
     /// - `layer_id`: コンテキストメニューを表示するレイヤーのID
     fn show_layer_context_menu(
         response: &egui::Response,
-        raster_tile_layer_store: &mut RasterTileLayerStore,
+        map_layer_store: &mut MapLayerStore,
         layer_id: &str,
     ) {
         response.context_menu(|ui| {
             if ui.button("レイヤーを削除").clicked() {
-                raster_tile_layer_store.remove_layer(layer_id);
+                map_layer_store.remove_layer(layer_id);
                 ui.close();
             }
         });

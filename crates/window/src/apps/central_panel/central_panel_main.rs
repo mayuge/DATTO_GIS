@@ -1,13 +1,19 @@
 use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
-use crate::apps::store::raster_tile_layer_store::{
-    RasterTileLayerStore, RasterTileLayerStoreTrait,
-};
-use domain::params::map_config::{MAP_MAX_ZOOM_LEVEL, MAP_MIN_ZOOM_LEVEL, MAP_TILE_SIZE};
-use domain::types::gis_engine_type::{MapObject, MapXYZ, MoveXY, Screen};
+use crate::apps::store::map_layer_store::{MapLayerStore, MapLayerStoreTrait};
+use super::picture_layer_editor::PictureLayerEditor;
+use super::picture_layer_renderer::PictureLayerRenderer;
+use super::raster_tile_renderer::RasterTileRenderer;
+use domain::params::map_config::{MAP_MAX_ZOOM_LEVEL, MAP_MIN_ZOOM_LEVEL};
+use domain::types::gis_engine_type::{MapXYZ, MoveXY, Screen};
+use domain::types::map_layer_type::MapLayer;
 use eframe::egui;
 use engine::create_map_obj;
 
-pub struct CentralPanelMain; 
+#[derive(Default)]
+pub struct CentralPanelMain {
+    picture_renderer: PictureLayerRenderer,
+    picture_editor: PictureLayerEditor,
+}
 
 impl CentralPanelMain {
     /// 中央パネルを描画する。
@@ -16,12 +22,12 @@ impl CentralPanelMain {
     /// * `ui` - 描画するUIコンテキスト
     /// * `ctx` - eguiのコンテキスト
     /// * `engine_store` - 地図エンジンの状態を管理するストア
-    /// * `raster_tile_layer_store` - ラスタータイルレイヤーの状態を管理するストア
+    /// * `map_layer_store` - マップレイヤーの状態を管理するストア
     pub fn use_central_panel_main(
         &mut self,
         ui: &mut egui::Ui,
         engine_store: &mut MapEngineStore,
-        raster_tile_layer_store: &RasterTileLayerStore,
+        map_layer_store: &mut MapLayerStore,
     ) {
         let ctx = ui.ctx().clone();
 
@@ -49,14 +55,40 @@ impl CentralPanelMain {
         // ズーム処理
         Self::handle_zoom_event(&response, &ctx, engine_store);
 
-        // パン移動量はフレームごとに適用し、前回の地図中心を基準にする。
-        let movement = Self::handle_pan_event(&response, &ctx);
-
         // 地図エンジンに渡す入力を組み立てる。
         let mut engine_input = engine_store.get_map_engine_input();
         let previous_map_center = engine_store
             .get_map_object()
             .map(|map_object| map_object.center);
+        let interaction_map_xyz = previous_map_center
+            .map(|center| MapXYZ {
+                latitude: center[1],
+                longitude: center[0],
+                zoom: engine_store.get_zoom(),
+            })
+            .unwrap_or(engine_input.map_xyz);
+        
+        // 画像レイヤーの編集状態を取得
+        let editing_picture = self.picture_editor.use_picture_layer_editor(
+            &response,
+            &ctx,
+            map_layer_store,
+            interaction_map_xyz,
+            engine_input.screen,
+            viewport,
+        );
+
+        // 画像の編集中は地図へドラッグを渡さない。
+        let movement = if editing_picture {
+            MoveXY {
+                move_x: 0.0,
+                move_y: 0.0,
+            }
+        } else {
+            Self::handle_pan_event(&response, &ctx)
+        };
+
+        // 前回の地図中心を使用してengine_inputを更新
         if let Some(center) = previous_map_center {
             engine_input.map_xyz = MapXYZ {
                 latitude: center[1],
@@ -79,12 +111,40 @@ impl CentralPanelMain {
             zoom: engine_input.map_xyz.zoom,
         };
 
-        // ラスタータイル描画
-        Self::render_raster_tiles(
+        // リスト先頭を最前面にするため、固定ビューポート内でレイヤーを逆順に描画する。
+        ui.scope_builder(
+            egui::UiBuilder::new()
+                .max_rect(viewport)
+                .layout(egui::Layout::top_down(egui::Align::Min)),
+            |ui| {
+                ui.set_clip_rect(viewport);
+                for map_layer in map_layer_store.get_all_layers().iter().rev() {
+                    match map_layer {
+                        MapLayer::RasterTile(layer) => {
+                            RasterTileRenderer::render(
+                                ui,
+                                &map_obj,
+                                layer,
+                                engine_input.map_xyz.zoom,
+                                viewport,
+                            );
+                        }
+                        MapLayer::Picture(layer) => {
+                            self.picture_renderer
+                                .render(ui, layer, map_xyz, engine_input.screen, viewport);
+                        }
+                    }
+                }
+            }
+        );
+        self.picture_renderer
+            .retain_layers(map_layer_store.get_all_layers());
+        self.picture_editor.paint_selection(
             ui,
-            &map_obj,
-            raster_tile_layer_store,
-            engine_input.map_xyz.zoom,
+            map_layer_store.get_all_layers(),
+            map_xyz,
+            engine_input.screen,
+            viewport,
         );
         engine_store.set_xyz(map_xyz);
         engine_store.set_map_object(map_obj);
@@ -156,91 +216,4 @@ impl CentralPanelMain {
         }
     }
 
-    /// ラスタータイルを描画する。
-    ///
-    /// # Arguments
-    /// * `ui` - 描画するUIコンテキスト
-    /// * `map_obj` - 地図オブジェクト
-    /// * `raster_tile_layer_store` - ラスタータイルレイヤーの状態を管理するストア
-    fn render_raster_tiles(
-        ui: &mut egui::Ui,
-        map_obj: &MapObject,
-        raster_tile_layer_store: &RasterTileLayerStore,
-        zoom: u32,
-    ) {
-        // タイルがない場合は描画しない
-        if map_obj.tiles.is_empty() {
-            return;
-        }
-
-        let viewport = ui.available_rect_before_wrap();
-        let origin = viewport.min;
-
-        // 最初のタイルを基準に配置
-        let first_tile = &map_obj.tiles[0];
-
-        let offset_x = map_obj.offset[0] as f32;
-        let offset_y = map_obj.offset[1] as f32;
-
-        let layers = raster_tile_layer_store.get_all_raster_tile_layers();
-
-        ui.scope_builder(
-            egui::UiBuilder::new()
-                .max_rect(viewport)
-                .layout(egui::Layout::top_down(egui::Align::Min)),
-            |ui| {
-                ui.set_clip_rect(viewport);
-
-                // 下のレイヤーから描画
-                for layer in layers.iter().rev() {
-                    //レイヤーがオフまたは不透明度が0以下の場合は描画しない
-                    if !layer.visible || layer.opacity <= 0.0 {
-                        continue;
-                    }
-                    // 最大・最小ズーム範囲ではない場合は描画しない
-                    if layer
-                        .min_zoom
-                        .is_some_and(|min_zoom| zoom < u32::from(min_zoom))
-                        || layer
-                            .max_zoom
-                            .is_some_and(|max_zoom| zoom > u32::from(max_zoom))
-                    {
-                        continue;
-                    }
-
-                    // レイヤーの不透明度をアルファ値に変換
-                    let alpha = (layer.opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
-
-                    for tile in &map_obj.tiles {
-                        let x = origin.x
-                            + offset_x
-                            + (tile.x as f32 - first_tile.x as f32) * MAP_TILE_SIZE;
-                        let y = origin.y
-                            + offset_y
-                            + (tile.y as f32 - first_tile.y as f32) * MAP_TILE_SIZE;
-
-                        let rect = egui::Rect::from_min_size(
-                            egui::pos2(x, y),
-                            egui::vec2(MAP_TILE_SIZE, MAP_TILE_SIZE),
-                        );
-                        // ビューポートに含まれていないタイルは描画しない
-                        if !rect.intersects(viewport) {
-                            continue;
-                        }
-
-                        let url = layer
-                            .url
-                            .replace("{z}", &tile.z.to_string())
-                            .replace("{x}", &tile.x.to_string())
-                            .replace("{y}", &tile.y.to_string());
-
-                        ui.put(
-                            rect,
-                            egui::Image::new(url).tint(egui::Color32::from_white_alpha(alpha)),
-                        );
-                    }
-                }
-            },
-        );
-    }
 }

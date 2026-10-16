@@ -1,7 +1,6 @@
 use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
-use crate::apps::store::raster_tile_layer_store::{
-    RasterTileLayerStore, RasterTileLayerStoreTrait,
-};
+use crate::apps::store::map_layer_store::{MapLayerStore, MapLayerStoreTrait};
+use domain::types::map_layer_type::MapLayer;
 use eframe::egui;
 
 /// 下部のステータスバーを管理する。
@@ -14,12 +13,12 @@ impl BottomPanelMain {
     /// # Arguments
     /// * `ui` - 描画するUIコンテキスト
     /// * `engine_store` - 地図エンジンの状態を管理するストア
-    /// * `raster_tile_layer_store` - ラスタータイルレイヤーの状態を管理するストア
+    /// * `map_layer_store` - マップレイヤーの状態を管理するストア
     pub fn use_bottom_panel_main(
         &mut self,
         ui: &mut egui::Ui,
         engine_store: &MapEngineStore,
-        raster_tile_layer_store: &RasterTileLayerStore,
+        map_layer_store: &MapLayerStore,
     ) {
         egui::Panel::bottom("bottom_panel").show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -49,7 +48,10 @@ impl BottomPanelMain {
 
                 // 表示中のレイヤーの出典を重複なしで右寄せ表示する。
                 let mut attributions: Vec<&(String, String)> = Vec::new();
-                for layer in raster_tile_layer_store.get_all_raster_tile_layers() {
+                for map_layer in map_layer_store.get_all_layers() {
+                    let MapLayer::RasterTile(layer) = map_layer else {
+                        continue;
+                    };
                     if !layer.visible || layer.opacity <= 0.0 {
                         continue;
                     }

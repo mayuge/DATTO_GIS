@@ -1,14 +1,15 @@
+use crate::apps::dialogs::add_image_file_dialog::AddImageFileDialog;
 use crate::apps::dialogs::add_raster_tile_dialog::AddRasterTileDialog;
 use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
 use crate::apps::store::panel_visible_store::{PanelVisibleStore, PanelVisibleStoreTrait};
-use crate::apps::store::raster_tile_layer_store::{
-    RasterTileLayerStore, RasterTileLayerStoreTrait,
-};
+use crate::apps::store::map_layer_store::{MapLayerStore, MapLayerStoreTrait};
+use domain::types::map_layer_type::MapLayer;
 use domain::types::gis_engine_type::MapXYZ;
 use eframe::egui;
 use std::sync::{Arc, Mutex};
 
 pub struct TopPanelMain {
+    add_image_file_dialog: AddImageFileDialog,
     add_raster_tile_dialog: AddRasterTileDialog,
     search_text: String,
     search_result: Arc<Mutex<Option<Result<MapXYZ, String>>>>,
@@ -18,6 +19,7 @@ pub struct TopPanelMain {
 impl Default for TopPanelMain {
     fn default() -> Self {
         Self {
+            add_image_file_dialog: AddImageFileDialog::default(),
             add_raster_tile_dialog: AddRasterTileDialog::default(),
             search_text: String::new(),
             search_result: Arc::new(Mutex::new(None)),
@@ -31,12 +33,12 @@ impl TopPanelMain {
     /// # 引数
     /// - `ui`: eguiのUIコンテキスト。
     /// - `panel_visible_store`: パネルの表示状態を管理するストア。
-    /// - `raster_tile_layer_store`: ラスタタイルレイヤーを管理するストア。
+    /// - `map_layer_store`: マップレイヤーを管理するストア。
     pub fn use_top_panel_main(
         &mut self,
         ui: &mut egui::Ui,
         panel_visible_store: &mut PanelVisibleStore,
-        raster_tile_layer_store: &mut RasterTileLayerStore,
+        map_layer_store: &mut MapLayerStore,
         map_engine_store: &mut MapEngineStore,
     ) {
         let completed_search = self.search_result.lock().unwrap().take();
@@ -71,6 +73,10 @@ impl TopPanelMain {
                         if ui.button("ベースマップを追加").clicked() {
                             self.add_raster_tile_dialog.open(panel_visible_store);
                         }
+                        if ui.button("画像を追加").clicked() {
+                            self.add_image_file_dialog.open();
+                        }
+
                     });
 
                     ui.menu_button("レイアウト", |ui| {
@@ -104,29 +110,37 @@ impl TopPanelMain {
             });
         });
 
+        let map_engine_input = map_engine_store.get_map_engine_input();
+        if let Some(mut layer) = self.add_image_file_dialog.use_add_image_file_dialog(
+            ui.ctx(),
+            *map_engine_store.get_xyz(),
+            map_engine_input.screen,
+        ) {
+            layer.id = Self::next_layer_id(map_layer_store, "picture_layer");
+            map_layer_store.add_layer(MapLayer::Picture(layer));
+        }
+
         if let Some(mut layer) = self
             .add_raster_tile_dialog
             .use_add_raster_tile_dialog(ui.ctx(), panel_visible_store)
         {
-            layer.id = Self::next_layer_id(raster_tile_layer_store);
-            raster_tile_layer_store.add_layer(layer);
+            layer.id = Self::next_layer_id(map_layer_store, "custom_raster_tile");
+            map_layer_store.add_layer(MapLayer::RasterTile(layer));
         }
     }
 
     /// 次のラスタタイルレイヤーIDを生成する。
     /// # 引数
-    /// - `raster_tile_layer_store`: 現在のラスタタイルレイヤーのストア。
+    /// - `map_layer_store`: 現在のマップレイヤーストア。
     ///
     /// # 戻り値
     /// 新しいラスタタイルレイヤーID。
-    fn next_layer_id(raster_tile_layer_store: &RasterTileLayerStore) -> String {
+    fn next_layer_id(map_layer_store: &MapLayerStore, prefix: &str) -> String {
         let mut index = 1;
         loop {
-            let id = format!("custom_raster_tile_{index}");
-            if !raster_tile_layer_store
-                .get_all_raster_tile_layers()
-                .iter()
-                .any(|layer| layer.id == id)
+            let id = format!("{prefix}_{index}");
+            if !map_layer_store
+                .is_layer_id(&id)
             {
                 return id;
             }
