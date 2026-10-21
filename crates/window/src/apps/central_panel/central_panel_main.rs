@@ -1,13 +1,13 @@
-use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
-use crate::apps::store::map_layer_store::{MapLayerStore, MapLayerStoreTrait};
 use super::picture_layer_editor::PictureLayerEditor;
 use super::picture_layer_renderer::PictureLayerRenderer;
 use super::raster_tile_renderer::RasterTileRenderer;
+use crate::apps::store::map_engine_store::{MapEngineStore, MapEngineStoreTrait};
+use crate::apps::store::map_layer_store::{MapLayerStore, MapLayerStoreTrait};
 use domain::params::map_config::{MAP_MAX_ZOOM_LEVEL, MAP_MIN_ZOOM_LEVEL};
 use domain::types::gis_engine_type::{MapXYZ, MoveXY, Screen};
 use domain::types::map_layer_type::MapLayer;
 use eframe::egui;
-use engine::create_map_obj;
+use engine::{create_map_obj, pixel_xy_to_lon_lat};
 
 #[derive(Default)]
 pub struct CentralPanelMain {
@@ -67,7 +67,7 @@ impl CentralPanelMain {
                 zoom: engine_store.get_zoom(),
             })
             .unwrap_or(engine_input.map_xyz);
-        
+
         // 画像レイヤーの編集状態を取得
         let editing_picture = self.picture_editor.use_picture_layer_editor(
             &response,
@@ -130,12 +130,17 @@ impl CentralPanelMain {
                             );
                         }
                         MapLayer::Picture(layer) => {
-                            self.picture_renderer
-                                .render(ui, layer, map_xyz, engine_input.screen, viewport);
+                            self.picture_renderer.render(
+                                ui,
+                                layer,
+                                map_xyz,
+                                engine_input.screen,
+                                viewport,
+                            );
                         }
                     }
                 }
-            }
+            },
         );
         self.picture_renderer
             .retain_layers(map_layer_store.get_all_layers());
@@ -153,9 +158,9 @@ impl CentralPanelMain {
     /// マウスホイールによるズーム操作を処理する。
     ///
     /// # Arguments
-    /// * `ui` - 描画するUIコンテキスト
+    /// * `response` - 地図の操作領域
     /// * `ctx` - eguiのコンテキスト
-    /// * `engine_store` - 地図エンジンの状態を管理する
+    /// * `engine_store` - 地図エンジンの状態を管理するストア
     fn handle_zoom_event(
         response: &egui::Response,
         ctx: &egui::Context,
@@ -183,19 +188,63 @@ impl CentralPanelMain {
             return;
         }
 
-        let mut zoom = engine_store.get_zoom();
+        let current_xyz = *engine_store.get_xyz();
+        let mut zoom = current_xyz.zoom;
 
         for direction in scroll_directions {
             zoom = if direction > 0.0 {
-                //ズームレベルが最大値でない場合、ズームレベルを1つ増やす
+                // ズームレベルを1つ増やす
                 zoom.saturating_add(1).min(MAP_MAX_ZOOM_LEVEL)
             } else {
-                //ズームレベルが最小値でない場合、ズームレベルを1つ減らす
+                // ズームレベルを1つ減らす
                 zoom.saturating_sub(1).max(MAP_MIN_ZOOM_LEVEL)
             };
         }
 
-        engine_store.set_zoom(zoom);
+        if zoom == current_xyz.zoom {
+            return;
+        }
+
+        let screen = engine_store.get_map_engine_input().screen;
+
+        let map_xyz = response.hover_pos().map(|pointer_pos| {
+            // 地図の中心座標（ピクセル）
+            let center = (screen.width / 2.0, screen.height / 2.0);
+
+            // 地図の左上を原点としたポインター座標
+            let pointer = (
+                f64::from(pointer_pos.x - response.rect.min.x),
+                f64::from(pointer_pos.y - response.rect.min.y),
+            );
+
+            // ズームが1段階変わるため、倍率は2倍または1/2倍
+            let scale = if zoom > current_xyz.zoom { 2.0 } else { 0.5 };
+
+            // ポインター直下の地理座標を維持するための中心位置
+            let new_center = (
+                pointer.0 - (pointer.0 - center.0) / scale,
+                pointer.1 - (pointer.1 - center.1) / scale,
+            );
+
+            // 補正したピクセル位置から地理座標を取得
+            pixel_xy_to_lon_lat(new_center, &current_xyz, screen).map(|(longitude, latitude)| {
+                MapXYZ {
+                    latitude,
+                    longitude,
+                    zoom,
+                }
+            })
+        });
+
+        match map_xyz {
+            Some(Ok(map_xyz)) => engine_store.set_xyz(map_xyz),
+            Some(Err(error)) => {
+                eprintln!("ズーム位置の座標変換に失敗しました: {error}");
+                engine_store.set_zoom(zoom);
+            }
+            None => engine_store.set_zoom(zoom),
+        }
+
         ctx.request_repaint();
     }
 
@@ -215,5 +264,4 @@ impl CentralPanelMain {
             }
         }
     }
-
 }

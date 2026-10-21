@@ -6,8 +6,8 @@
     <title>DattoGIS</title>
     
 <script type="module">
-import init, * as bindings from '/DATTO_GIS/window-84d137219d011b30.js';
-const wasm = await init({ module_or_path: '/DATTO_GIS/window-84d137219d011b30_bg.wasm' });
+import init, * as bindings from '/DATTO_GIS/window-96c99b250449f2c1.js';
+const wasm = await init({ module_or_path: '/DATTO_GIS/window-96c99b250449f2c1_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -33,7 +33,7 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
         touch-action: none;
       }
     </style>
-  <link rel="modulepreload" href="/DATTO_GIS/window-84d137219d011b30.js" crossorigin="anonymous" integrity="sha384-9glVaDFjXWkXmhIDckT/HjEMeQhQDIb9t5r4NjLpwMEdYqKnOyU43lUkOWg8Oez+"><link rel="preload" href="/DATTO_GIS/window-84d137219d011b30_bg.wasm" crossorigin="anonymous" integrity="sha384-NA6JfWo4rn2Kw9ouFU5lsOadKPx+nXPdYyT0rxDyV4HkUEPs/AKZRkgbsiJ9uzsM" as="fetch" type="application/wasm"></head>
+  <link rel="modulepreload" href="/DATTO_GIS/window-96c99b250449f2c1.js" crossorigin="anonymous" integrity="sha384-9glVaDFjXWkXmhIDckT/HjEMeQhQDIb9t5r4NjLpwMEdYqKnOyU43lUkOWg8Oez+"><link rel="preload" href="/DATTO_GIS/window-96c99b250449f2c1_bg.wasm" crossorigin="anonymous" integrity="sha384-2pS5vNeKE9D0KOwomVNu2YvyEDiQp5V8EtOk6m1CsPlkkTJnR33m2/Qh9Kl0Yq4u" as="fetch" type="application/wasm"></head>
   <body>
     <canvas id="datto-gis-canvas"></canvas>
   </body>
